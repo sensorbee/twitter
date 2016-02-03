@@ -1,11 +1,13 @@
 package twitter
 
 import (
+	"encoding/json"
 	"fmt"
-	_ "github.com/ChimeraCoder/anaconda"
+	"github.com/ChimeraCoder/anaconda"
 	"gopkg.in/yaml.v2"
 	"io"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"pfi/sensorbee/sensorbee/bql"
 	"pfi/sensorbee/sensorbee/core"
@@ -13,7 +15,8 @@ import (
 )
 
 type publicStream struct {
-	keys *apiKey
+	ioParams *bql.IOParams
+	keys     *apiKey
 }
 
 type apiKey struct {
@@ -24,7 +27,50 @@ type apiKey struct {
 }
 
 func (p *publicStream) GenerateStream(ctx *core.Context, w core.Writer) error {
-	// TODO: implement
+	anaconda.SetConsumerKey(p.keys.ConsumerKey)
+	anaconda.SetConsumerSecret(p.keys.ConsumerSecret)
+	api := anaconda.NewTwitterApi(p.keys.AccessToken, p.keys.AccessTokenSecret)
+	defer api.Close()
+
+	s := api.PublicStreamSample(url.Values{})
+	defer s.Stop()
+	for twRaw := range s.C {
+		tw, ok := twRaw.(anaconda.Tweet)
+		if !ok { // only processes tweets
+			continue
+		}
+
+		createdAt, err := tw.CreatedAtTime()
+		if err != nil {
+			ctx.ErrLog(err).WithField("node_type", core.NTSource).
+				WithField("node_name", p.ioParams.Name).
+				Error("Cannot parse created at")
+			continue
+		}
+
+		// anaconda.Tweet needs to be converted to data.Map via JSON.
+		js, err := json.Marshal(&tw)
+		if err != nil {
+			ctx.ErrLog(err).WithField("node_type", core.NTSource).
+				WithField("node_name", p.ioParams.Name).
+				Error("Cannot re-convert a tweet to JSON")
+			continue
+		}
+
+		m := data.Map{}
+		if err := json.Unmarshal(js, &m); err != nil {
+			ctx.ErrLog(err).WithField("node_type", core.NTSource).
+				WithField("node_name", p.ioParams.Name).
+				Error("Cannot parse converted JSON")
+			continue
+		}
+
+		t := core.NewTuple(m)
+		t.Timestamp = createdAt
+		if err := w.Write(ctx, t); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -41,7 +87,8 @@ func CreatePublicStreamSource(ctx *core.Context,
 		return nil, err
 	}
 	return core.ImplementSourceStop(&publicStream{
-		keys: keys,
+		ioParams: ioParams,
+		keys:     keys,
 	}), nil
 }
 
