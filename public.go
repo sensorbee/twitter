@@ -4,14 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/ChimeraCoder/anaconda"
+	"gopkg.in/sensorbee/sensorbee.v0/bql"
+	"gopkg.in/sensorbee/sensorbee.v0/core"
+	"gopkg.in/sensorbee/sensorbee.v0/data"
 	"gopkg.in/yaml.v2"
 	"io"
 	"io/ioutil"
 	"net/url"
 	"os"
-	"pfi/sensorbee/sensorbee/bql"
-	"pfi/sensorbee/sensorbee/core"
-	"pfi/sensorbee/sensorbee/data"
 )
 
 type publicStream struct {

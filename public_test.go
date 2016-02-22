@@ -2,9 +2,9 @@ package twitter
 
 import (
 	. "github.com/smartystreets/goconvey/convey"
+	"gopkg.in/sensorbee/sensorbee.v0/data"
 	"io/ioutil"
 	"os"
-	"pfi/sensorbee/sensorbee/data"
 	"testing"
 )
 

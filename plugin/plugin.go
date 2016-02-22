@@ -2,7 +2,7 @@ package plugin
 
 import (
 	"github.com/sensorbee/twitter"
-	"pfi/sensorbee/sensorbee/bql"
+	"gopkg.in/sensorbee/sensorbee.v0/bql"
 )
 
 func init() {
